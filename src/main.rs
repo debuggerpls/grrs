@@ -13,10 +13,10 @@ struct Cli {
 }
 
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Cli::parse();
 
-    let file = std::fs::File::open(args.path).expect("could not open file");
+    let file = std::fs::File::open(args.path)?;
     let mut reader = BufReader::new(file);
     let mut line = String::new();
 
@@ -28,7 +28,9 @@ fn main() {
         if line.contains(&args.pattern) {
             print!("{}", line);
         }
-        
+
         line.clear();
     }
+
+    Ok(())
 }
