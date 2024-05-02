@@ -1,5 +1,5 @@
 use std::io::prelude::*;
-use std::io::BufReader;
+use std::io::{self, BufReader, Write};
 
 use clap::Parser;
 use anyhow::{Context, Result};
@@ -22,13 +22,16 @@ fn main() -> Result<()> {
     let mut reader = BufReader::new(file);
     let mut line = String::new();
 
+    let stdout = io::stdout();
+    let mut handle = io::BufWriter::new(stdout.lock());
+
     while let Ok(len) = reader.read_line(&mut line) {
         if len == 0 {
             break;
         }
 
         if line.contains(&args.pattern) {
-            print!("{}", line);
+            write!(handle, "{}", line)?;
         }
 
         line.clear();
