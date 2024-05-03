@@ -1,5 +1,6 @@
 use std::io::prelude::*;
-use std::io::{self, BufReader, Write};
+use std::io::{self, BufReader, BufWriter, Read, Write};
+use std::string::String;
 
 use clap::Parser;
 use anyhow::{Context, Result};
@@ -19,23 +20,37 @@ fn main() -> Result<()> {
 
     let file = std::fs::File::open(&args.path)
         .with_context(|| format!("could not read file: `{}`", &args.path.display()))?;
-    let mut reader = BufReader::new(file);
-    let mut line = String::new();
+    let reader = BufReader::new(file);
 
     let stdout = io::stdout();
-    let mut handle = io::BufWriter::new(stdout.lock());
+    let mut handle = BufWriter::new(stdout.lock());
+
+    find_matches(reader, &args.pattern, &mut handle)
+}
+
+fn find_matches<T>(mut reader: BufReader<T>, pattern: &str, mut writer: impl Write) -> Result<()>
+    where T: Read {
+    let mut line = String::new();
 
     while let Ok(len) = reader.read_line(&mut line) {
         if len == 0 {
             break;
         }
 
-        if line.contains(&args.pattern) {
-            write!(handle, "{}", line)?;
+        if line.contains(pattern) {
+            write!(writer, "{}", line)?;
         }
 
         line.clear();
     }
 
     Ok(())
+}
+
+#[test]
+fn find_a_match() {
+    let mut result = Vec::new();
+    let ok = find_matches(BufReader::new("lorem ipsum\ndolor sit amet".as_bytes()), "lorem", &mut result);
+    assert!(ok.is_ok());
+    assert_eq!(result, b"lorem ipsum\n");
 }
